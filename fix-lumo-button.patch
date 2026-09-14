@@ -1,0 +1,28 @@
+--- app/src/main/java/com/example/MainActivity.kt
++++ app/src/main/java/com/example/MainActivity.kt
+@@ -551,20 +551,19 @@
+             animation = tween(1000, easing = FastOutSlowInEasing),
+             repeatMode = RepeatMode.Reverse
+         )
+     )
+ 
+-    com.example.ui.components.LiquidBubble(
++    Box(
+         modifier = Modifier
+             .padding(bottom = 80.dp, end = 4.dp)
+             .size(56.dp)
++            .clip(CircleShape)
++            .background(accentColor.copy(alpha = 0.9f))
++            .border(2.dp, Color.White.copy(alpha = 0.4f), CircleShape)
+             .clickable { onClick() }
+             .testTag("floating_lumo_button"),
+-        isDark = true,
+-        radius = 28 // Circle
+-    ) {
++        contentAlignment = Alignment.Center
++    ) {
+         Box(
+             modifier = Modifier.fillMaxSize(),
+             contentAlignment = Alignment.Center
+         ) {
+             Box(

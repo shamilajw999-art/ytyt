@@ -1,0 +1,6 @@
+{
+  "name": "MYTHIC",
+  "description": "Premium Sri Lankan heritage exploration platform with scanning, AR, LUMO AI, and gamification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

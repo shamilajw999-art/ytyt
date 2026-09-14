@@ -1,0 +1,1111 @@
+<!-- Mythic Subscription Admin Center - Single File HTML for Cloudflare Pages / Static Hosting -->
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mythic — Subscription Approvals & Admin Center</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & Cinzel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['Cinzel', 'serif']
+          },
+          colors: {
+            mythic: {
+              gold: '#FFD700',
+              goldLight: '#FFF59D',
+              goldDark: '#B8860B',
+              emerald: '#10B981',
+              darkBg: '#0B0F19',
+              cardBg: '#131B2E',
+              border: '#1E293B',
+              borderHover: '#334155'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0B0F19;
+      color: #F8FAFC;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #FFF9C4 0%, #FFD700 50%, #FFA000 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glass-card {
+      background: rgba(19, 27, 46, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-gold {
+      background: rgba(19, 27, 46, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.08);
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0B0F19; }
+    ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-yellow-400 to-amber-200 p-[1px] flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <div class="w-full h-full bg-slate-950 rounded-[11px] flex items-center justify-center">
+            <span class="text-xl">👑</span>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-display font-black text-lg tracking-wider gold-gradient-text">MYTHIC</h1>
+            <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-widest bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-full">ADMIN CENTER</span>
+          </div>
+          <p class="text-xs text-slate-400">Subscription & Bank Transfer Verification Hub</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <!-- Live Connection Status Indicator -->
+        <button onclick="openConfigModal()" id="connectionBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 hover:border-slate-600 transition">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse" id="statusDot"></span>
+          <span id="statusText" class="text-slate-300">Not Connected</span>
+          <i class="fa-solid fa-gear text-slate-400 ml-1"></i>
+        </button>
+
+        <!-- Direct Manual Subscription Grant Button -->
+        <button onclick="openGrantModal()" class="flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 hover:from-amber-400 hover:to-yellow-400 shadow-md shadow-amber-500/20 transition">
+          <i class="fa-solid fa-plus"></i>
+          <span>Grant VIP Pass</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- KPI & Stats Summary Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Pending Reviews Card -->
+      <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-amber-500/40 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Needs Review</span>
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span class="text-3xl font-extrabold text-white" id="kpiPending">0</span>
+          <span class="text-xs text-slate-400">orders awaiting approval</span>
+        </div>
+        <div class="mt-2 text-[11px] text-amber-400/90 font-medium" id="kpiPendingSubtext">Checking incoming transfers...</div>
+      </div>
+
+      <!-- Approved Orders Card -->
+      <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-emerald-500/40 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Verified & Active</span>
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span class="text-3xl font-extrabold text-white" id="kpiVerified">0</span>
+          <span class="text-xs text-slate-400">subscriptions active</span>
+        </div>
+        <div class="mt-2 text-[11px] text-emerald-400/90 font-medium">Unlocked VIP perks & badges</div>
+      </div>
+
+      <!-- Total Revenue Card -->
+      <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-blue-500/40 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Total Revenue</span>
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <i class="fa-solid fa-dollar-sign"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span class="text-3xl font-extrabold text-white" id="kpiRevenue">$0.00</span>
+          <span class="text-xs text-slate-400">USD generated</span>
+        </div>
+        <div class="mt-2 text-[11px] text-blue-400/90 font-medium" id="kpiRevenueSubtext">Verified payments total</div>
+      </div>
+
+      <!-- Total Orders Card -->
+      <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-purple-500/40 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Total Orders</span>
+          <div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span class="text-3xl font-extrabold text-white" id="kpiTotal">0</span>
+          <span class="text-xs text-slate-400">all time orders</span>
+        </div>
+        <div class="mt-2 text-[11px] text-purple-400/90 font-medium">Pro ($1.99) & Prime ($5.00)</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs & Actions Toolbar -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-4 rounded-2xl">
+      <!-- Status Filters Tabs -->
+      <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-950/60 rounded-xl border border-slate-800">
+        <button onclick="setTab('needs_review')" id="tabBtn_needs_review" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500/20 text-amber-300 border border-amber-500/40">
+          <i class="fa-solid fa-bell mr-1"></i> Needs Review (<span id="tabCountReview">0</span>)
+        </button>
+        <button onclick="setTab('all')" id="tabBtn_all" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">
+          All Orders (<span id="tabCountAll">0</span>)
+        </button>
+        <button onclick="setTab('verified')" id="tabBtn_verified" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">
+          Verified (<span id="tabCountVerified">0</span>)
+        </button>
+        <button onclick="setTab('rejected')" id="tabBtn_rejected" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">
+          Rejected (<span id="tabCountRejected">0</span>)
+        </button>
+        <button onclick="setTab('sql_setup')" id="tabBtn_sql_setup" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-code mr-1"></i> Supabase SQL Setup
+        </button>
+      </div>
+
+      <!-- Search & Refresh Toolbar -->
+      <div class="flex items-center space-x-2">
+        <div class="relative flex-1 sm:w-64">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500"></i>
+          <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Search Ref, Email, Tx ID..." class="w-full pl-8 pr-4 py-1.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition">
+        </div>
+        <button onclick="fetchOrders(true)" id="refreshBtn" title="Refresh Orders" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 text-xs transition">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+        <button onclick="exportCSV()" title="Export CSV" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 text-xs transition flex items-center space-x-1">
+          <i class="fa-solid fa-file-csv"></i>
+          <span class="hidden sm:inline text-[11px] font-medium">Export</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Orders Table Container -->
+    <div id="ordersTableView" class="glass-card rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[10px]">
+              <th class="py-3.5 px-4">Order Reference</th>
+              <th class="py-3.5 px-4">Customer Email</th>
+              <th class="py-3.5 px-4">Plan & Amount</th>
+              <th class="py-3.5 px-4">Bank Transaction ID</th>
+              <th class="py-3.5 px-4">Receipt Proof</th>
+              <th class="py-3.5 px-4">Status</th>
+              <th class="py-3.5 px-4">Created Date</th>
+              <th class="py-3.5 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody" class="divide-y divide-slate-800/60 font-normal">
+            <tr>
+              <td colspan="8" class="py-12 text-center text-slate-500">
+                <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-amber-500"></i>
+                <p>Loading subscription payment orders from Supabase...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Supabase SQL Script Viewer Tab -->
+    <div id="sqlSetupView" class="hidden glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-database text-amber-400"></i>
+            <span>Supabase Database & RPC Migration Script</span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Run this SQL in your Supabase SQL Editor if you need to create or update the approval RPCs and tables.</p>
+        </div>
+        <button onclick="copySQLScript()" class="px-3 py-1.5 bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 rounded-lg text-xs font-bold transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-copy"></i>
+          <span id="copySqlBtnText">Copy SQL Script</span>
+        </button>
+      </div>
+
+      <pre class="bg-slate-950 p-4 rounded-xl text-[11px] font-mono text-emerald-400 overflow-x-auto max-h-[500px] border border-slate-800" id="sqlScriptText">
+-- ====================================================================
+-- MYTHIC SUBSCRIPTIONS & BANK TRANSFER APPROVAL ENGINE (2026)
+-- Run this in your Supabase SQL Editor:
+-- ====================================================================
+
+-- 1. Ensure Payment Orders Table exists
+CREATE TABLE IF NOT EXISTS public.payment_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_email TEXT,
+    plan TEXT NOT NULL CHECK (plan IN ('pro', 'max', 'prime')),
+    amount NUMERIC(10, 2) NOT NULL,
+    currency TEXT DEFAULT 'USD',
+    payment_reference TEXT UNIQUE NOT NULL,
+    bank_transaction_id TEXT,
+    receipt_image_url TEXT,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'submitted', 'verified', 'approved', 'rejected', 'expired')),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    expires_at TIMESTAMPTZ DEFAULT (now() + INTERVAL '7 days'),
+    verified_at TIMESTAMPTZ,
+    verified_by TEXT,
+    rejection_reason TEXT,
+    subscription_id UUID
+);
+
+-- 2. Ensure Subscriptions Table exists
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    plan TEXT NOT NULL CHECK (plan IN ('pro', 'max', 'prime')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled')),
+    payment_order_id UUID REFERENCES public.payment_orders(id) ON DELETE SET NULL,
+    started_at TIMESTAMPTZ DEFAULT now(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 3. Storage bucket for payment receipts
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('payment-receipts', 'payment-receipts', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 4. RPC: admin_approve_payment_order
+CREATE OR REPLACE FUNCTION public.admin_approve_payment_order(
+    p_order_id UUID,
+    p_verified_by TEXT DEFAULT 'admin'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_order RECORD;
+    v_sub_id UUID := gen_random_uuid();
+    v_duration INTERVAL;
+    v_expires_at TIMESTAMPTZ;
+    v_normalized_plan TEXT;
+BEGIN
+    SELECT * INTO v_order FROM public.payment_orders WHERE id = p_order_id;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Payment order not found');
+    END IF;
+
+    v_normalized_plan := CASE WHEN LOWER(v_order.plan) IN ('max', 'prime') THEN 'max' ELSE 'pro' END;
+    v_duration := CASE WHEN v_normalized_plan = 'max' THEN INTERVAL '365 days' ELSE INTERVAL '30 days' END;
+    v_expires_at := now() + v_duration;
+
+    -- Update Order
+    UPDATE public.payment_orders
+    SET status = 'verified',
+        verified_at = now(),
+        verified_by = p_verified_by,
+        subscription_id = v_sub_id
+    WHERE id = p_order_id;
+
+    -- Upsert Active Subscription
+    INSERT INTO public.subscriptions (id, user_id, plan, status, payment_order_id, started_at, expires_at)
+    VALUES (v_sub_id, v_order.user_id, v_normalized_plan, 'active', p_order_id, now(), v_expires_at);
+
+    -- Update Profile tier
+    UPDATE public.profiles
+    SET subscription_tier = v_normalized_plan
+    WHERE id = v_order.user_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'order_id', p_order_id,
+        'user_id', v_order.user_id,
+        'plan', v_normalized_plan,
+        'status', 'verified',
+        'expires_at', v_expires_at
+    );
+END;
+$$;
+
+-- 5. RPC: admin_reject_payment_order
+CREATE OR REPLACE FUNCTION public.admin_reject_payment_order(
+    p_order_id UUID,
+    p_rejection_reason TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    UPDATE public.payment_orders
+    SET status = 'rejected',
+        rejection_reason = p_rejection_reason
+    WHERE id = p_order_id;
+
+    RETURN jsonb_build_object('success', true, 'order_id', p_order_id, 'status', 'rejected');
+END;
+$$;
+      </pre>
+    </div>
+
+  </main>
+
+  <!-- RECEIPT IMAGE PREVIEW MODAL -->
+  <div id="receiptModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-2xl w-full p-6 border border-slate-700 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-receipt text-amber-400 text-lg"></i>
+          <h3 class="font-bold text-white text-base">Bank Transfer Receipt Proof</h3>
+        </div>
+        <button onclick="closeReceiptModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 flex flex-col items-center">
+        <div class="w-full max-h-[450px] overflow-hidden rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center p-2">
+          <img id="receiptModalImg" src="" alt="Proof Receipt" class="max-h-[430px] w-auto object-contain rounded-lg">
+        </div>
+        <div class="mt-4 flex items-center justify-between w-full text-xs text-slate-400">
+          <span id="receiptModalRef" class="font-mono text-amber-400"></span>
+          <a id="receiptModalDownload" href="" target="_blank" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-download"></i>
+            <span>Open / Download Full Size</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REJECT CONFIRMATION MODAL -->
+  <div id="rejectModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-md w-full p-6 border border-red-500/30 shadow-2xl relative">
+      <div class="flex items-center space-x-3 pb-3 border-b border-slate-800">
+        <div class="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-white text-base">Reject Payment Order</h3>
+          <p class="text-xs text-slate-400" id="rejectModalRefText">Order Reference</p>
+        </div>
+      </div>
+
+      <div class="mt-4 space-y-3">
+        <label class="block text-xs font-semibold text-slate-300">Reason for Rejection:</label>
+        
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" onclick="setRejectReason('Bank transaction ID was not found in bank ledger.')" class="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700">Invalid Tx ID</button>
+          <button type="button" onclick="setRejectReason('Transferred amount does not match package price ($1.99/$5.00).')" class="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700">Incorrect Amount</button>
+          <button type="button" onclick="setRejectReason('Receipt proof is blurry, illegible or invalid.')" class="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700">Blurry Slip</button>
+          <button type="button" onclick="setRejectReason('Duplicate submission.')" class="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700">Duplicate</button>
+        </div>
+
+        <textarea id="rejectReasonInput" rows="3" class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition" placeholder="Explain why the payment is being rejected..."></textarea>
+      </div>
+
+      <div class="mt-6 flex items-center justify-end space-x-3">
+        <button onclick="closeRejectModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition">Cancel</button>
+        <button onclick="confirmRejectOrder()" id="confirmRejectBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-xmark"></i>
+          <span>Confirm Rejection</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECT MANUAL GRANT MODAL -->
+  <div id="grantModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card-gold rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">👑</span>
+          <h3 class="font-bold text-white text-base">Direct VIP Subscription Grant</h3>
+        </div>
+        <button onclick="closeGrantModal()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">User Email or User UUID:</label>
+          <input type="text" id="grantUserIdentifier" placeholder="e.g. user@gmail.com or 12345-..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-amber-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Subscription Tier:</label>
+          <select id="grantPlan" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-amber-500 focus:outline-none">
+            <option value="prime">Mythic Prime (All VIP Perks + 2x XP + Offline 3D Maps)</option>
+            <option value="pro">Mythic Pro (Zero Ads + Unlimited AI)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Pass Duration:</label>
+          <select id="grantDurationDays" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-amber-500 focus:outline-none">
+            <option value="365">1 Year (365 Days) — Standard Prime Pass</option>
+            <option value="30">1 Month (30 Days) — Standard Pro Pass</option>
+            <option value="90">3 Months (90 Days)</option>
+            <option value="3650">10 Years / Lifetime Access</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-end space-x-3">
+        <button onclick="closeGrantModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white">Cancel</button>
+        <button onclick="executeDirectGrant()" id="confirmGrantBtn" class="px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 hover:from-amber-400 hover:to-yellow-400 transition">
+          Grant Subscription Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIGURATION / CREDENTIALS MODAL -->
+  <div id="configModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-lg w-full p-6 border border-slate-700 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-plug text-amber-400 text-lg"></i>
+          <h3 class="font-bold text-white text-base">Supabase Connection Settings</h3>
+        </div>
+        <button onclick="closeConfigModal()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Supabase Project URL:</label>
+          <input type="text" id="cfgUrl" placeholder="https://your-project.supabase.co" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-amber-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Supabase Service Role Key or Anon Key:</label>
+          <input type="password" id="cfgKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-amber-500 focus:outline-none">
+          <p class="text-[10px] text-slate-400 mt-1">Tip: Use your Supabase <strong>Service Role Key</strong> to bypass RLS and perform instant 1-click approvals, or login with an admin account.</p>
+        </div>
+
+        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-[11px] text-slate-400">
+          <i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i>
+          Credentials are saved strictly in your browser's private <code class="text-amber-300">localStorage</code> and never transmitted elsewhere.
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-between">
+        <button onclick="resetDefaultConfig()" class="text-xs text-slate-500 hover:text-slate-400 underline">Restore App Defaults</button>
+        <div class="flex items-center space-x-2">
+          <button onclick="closeConfigModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white">Cancel</button>
+          <button onclick="saveConfigAndConnect()" class="px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 transition">
+            Save & Connect
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- JAVASCRIPT APPLICATION CONTROLLER -->
+  <script>
+    let supabaseClient = null;
+    let allOrders = [];
+    let currentTab = 'needs_review';
+    let activeRejectOrderId = null;
+    let autoRefreshInterval = null;
+
+    const STORAGE_URL_KEY = 'mythic_admin_sb_url';
+    const STORAGE_KEY_KEY = 'mythic_admin_sb_key';
+    const DEFAULT_URL = 'https://arhfpupxjcttsoyugmuc.supabase.co';
+    const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyaGZwdXB4amN0dHNveXVnbXVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDk1MjMsImV4cCI6MjEwMzQ4NTUyM30.rSX8MxzdOwFVHnaT17t1KWI_hMAdiBYtkKh-z2MW6SY';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initSupabase();
+      fetchOrders();
+      autoRefreshInterval = setInterval(() => {
+        if (currentTab !== 'sql_setup') fetchOrders(false);
+      }, 15000);
+    });
+
+    function initSupabase() {
+      const savedUrl = localStorage.getItem(STORAGE_URL_KEY) || DEFAULT_URL;
+      const savedKey = localStorage.getItem(STORAGE_KEY_KEY) || DEFAULT_KEY;
+
+      document.getElementById('cfgUrl').value = savedUrl;
+      document.getElementById('cfgKey').value = savedKey;
+
+      if (savedUrl && savedKey) {
+        try {
+          supabaseClient = supabase.createClient(savedUrl, savedKey);
+          updateConnectionStatus(true, savedUrl);
+        } catch (e) {
+          console.error("Supabase init error:", e);
+          updateConnectionStatus(false);
+        }
+      } else {
+        updateConnectionStatus(false);
+      }
+    }
+
+    function updateConnectionStatus(connected, url = '') {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      if (connected) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        text.innerText = 'Connected';
+        text.className = 'text-emerald-400 font-semibold';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+        text.innerText = 'Set Supabase Key';
+        text.className = 'text-amber-300 font-semibold';
+      }
+    }
+
+    async function fetchOrders(showToastOnManual = false) {
+      const refreshBtn = document.getElementById('refreshBtn');
+      if (refreshBtn) refreshBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+      if (!supabaseClient) {
+        const savedUrl = localStorage.getItem(STORAGE_URL_KEY) || DEFAULT_URL;
+        const savedKey = localStorage.getItem(STORAGE_KEY_KEY);
+        if (savedUrl && savedKey) {
+          supabaseClient = supabase.createClient(savedUrl, savedKey);
+          updateConnectionStatus(true);
+        } else {
+          renderEmptyTable("Please configure your Supabase Project URL and Service Key to view live orders.");
+          if (refreshBtn) refreshBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
+          return;
+        }
+      }
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('payment_orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error("Fetch orders error:", error);
+          showToast(`Supabase Error: ${error.message}`, 'error');
+          renderEmptyTable(`Failed to fetch orders: ${error.message}`);
+        } else {
+          allOrders = data || [];
+          updateKPIs();
+          applyFilters();
+          if (showToastOnManual) {
+            showToast(`Loaded ${allOrders.length} orders successfully`, 'success');
+          }
+        }
+      } catch (err) {
+        console.error("Fetch exception:", err);
+        renderEmptyTable(err.message);
+      } finally {
+        if (refreshBtn) refreshBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
+      }
+    }
+
+    function updateKPIs() {
+      const pendingOrders = allOrders.filter(o => ['pending', 'submitted'].includes((o.status || '').toLowerCase()));
+      const verifiedOrders = allOrders.filter(o => ['verified', 'approved'].includes((o.status || '').toLowerCase()));
+      const rejectedOrders = allOrders.filter(o => (o.status || '').toLowerCase() === 'rejected');
+
+      const totalRevenue = verifiedOrders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+
+      document.getElementById('kpiPending').innerText = pendingOrders.length;
+      document.getElementById('kpiVerified').innerText = verifiedOrders.length;
+      document.getElementById('kpiRevenue').innerText = `$${totalRevenue.toFixed(2)}`;
+      document.getElementById('kpiTotal').innerText = allOrders.length;
+
+      document.getElementById('tabCountReview').innerText = pendingOrders.length;
+      document.getElementById('tabCountAll').innerText = allOrders.length;
+      document.getElementById('tabCountVerified').innerText = verifiedOrders.length;
+      document.getElementById('tabCountRejected').innerText = rejectedOrders.length;
+
+      if (pendingOrders.length > 0) {
+        document.getElementById('kpiPendingSubtext').innerText = `⚡ ${pendingOrders.length} orders ready for immediate approval`;
+      } else {
+        document.getElementById('kpiPendingSubtext').innerText = `All orders reviewed and up to date`;
+      }
+    }
+
+    function setTab(tab) {
+      currentTab = tab;
+      const tabs = ['needs_review', 'all', 'verified', 'rejected', 'sql_setup'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tabBtn_${t}`);
+        if (btn) {
+          if (t === tab) {
+            btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm';
+          } else {
+            btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition';
+          }
+        }
+      });
+
+      if (tab === 'sql_setup') {
+        document.getElementById('ordersTableView').classList.add('hidden');
+        document.getElementById('sqlSetupView').classList.remove('hidden');
+      } else {
+        document.getElementById('ordersTableView').classList.remove('hidden');
+        document.getElementById('sqlSetupView').classList.add('hidden');
+        applyFilters();
+      }
+    }
+
+    function applyFilters() {
+      const search = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+
+      const filtered = allOrders.filter(order => {
+        const status = (order.status || '').toLowerCase();
+        let matchesTab = true;
+
+        if (currentTab === 'needs_review') {
+          matchesTab = ['pending', 'submitted'].includes(status);
+        } else if (currentTab === 'verified') {
+          matchesTab = ['verified', 'approved'].includes(status);
+        } else if (currentTab === 'rejected') {
+          matchesTab = status === 'rejected';
+        }
+
+        const ref = (order.payment_reference || '').toLowerCase();
+        const email = (order.user_email || '').toLowerCase();
+        const txId = (order.bank_transaction_id || '').toLowerCase();
+        const userId = (order.user_id || '').toLowerCase();
+
+        const matchesSearch = !search || ref.includes(search) || email.includes(search) || txId.includes(search) || userId.includes(search);
+
+        return matchesTab && matchesSearch;
+      });
+
+      renderOrdersTable(filtered);
+    }
+
+    function renderOrdersTable(orders) {
+      const tbody = document.getElementById('ordersTableBody');
+      if (!orders || orders.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="py-12 text-center text-slate-500">
+              <div class="text-3xl mb-2">🛡️</div>
+              <p class="text-sm font-semibold text-slate-300">No payment orders found matching this filter</p>
+              <p class="text-xs text-slate-500 mt-1">Pending user bank submissions will appear here automatically.</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = orders.map(order => {
+        const status = (order.status || 'pending').toLowerCase();
+        const isNeedsReview = ['pending', 'submitted'].includes(status);
+        const isVerified = ['verified', 'approved'].includes(status);
+        const isRejected = status === 'rejected';
+
+        const planNormalized = (order.plan || 'pro').toLowerCase();
+        const isPrime = ['prime', 'max'].includes(planNormalized);
+        const planBadge = isPrime
+          ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/40 text-amber-300 flex items-center space-x-1 w-fit"><span>👑</span><span>PRIME</span></span>`
+          : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/60 border border-slate-500/40 text-slate-200 flex items-center space-x-1 w-fit"><span>⭐</span><span>PRO</span></span>`;
+
+        const statusBadge = isVerified
+          ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">VERIFIED</span>`
+          : isRejected
+          ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 border border-red-500/40 text-red-400">REJECTED</span>`
+          : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300 animate-pulse">NEEDS REVIEW</span>`;
+
+        const amountFormatted = `$${(parseFloat(order.amount) || 0).toFixed(2)} ${order.currency || 'USD'}`;
+        const createdDate = order.created_at ? new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'N/A';
+
+        const receiptButton = order.receipt_image_url
+          ? `<button onclick="openReceiptModal('${escapeHtml(order.receipt_image_url)}', '${escapeHtml(order.payment_reference)}')" class="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-semibold flex items-center space-x-1">
+              <i class="fa-solid fa-image"></i>
+              <span>View Proof</span>
+             </button>`
+          : `<span class="text-slate-500 text-[11px] italic">None uploaded</span>`;
+
+        const actionButtons = isNeedsReview
+          ? `
+            <div class="flex items-center justify-end space-x-2">
+              <button onclick="openRejectModal('${order.id}', '${escapeHtml(order.payment_reference)}')" class="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-bold text-[11px] transition">
+                Reject
+              </button>
+              <button onclick="approveOrder('${order.id}', '${order.user_id}', '${order.plan}')" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-sm shadow-emerald-600/30 transition flex items-center space-x-1">
+                <i class="fa-solid fa-check"></i>
+                <span>Approve</span>
+              </button>
+            </div>
+          `
+          : isVerified
+          ? `<span class="text-emerald-400 font-semibold text-[11px]">✓ Activated</span>`
+          : `<span class="text-red-400 font-medium text-[11px]" title="${escapeHtml(order.rejection_reason || '')}">Rejected</span>`;
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3 px-4">
+              <div class="font-mono font-bold text-white">${escapeHtml(order.payment_reference)}</div>
+              <div class="text-[10px] text-slate-500 truncate max-w-[140px]">${escapeHtml(order.id || '')}</div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="text-slate-200 font-medium">${escapeHtml(order.user_email || 'No email')}</div>
+              <div class="text-[10px] text-slate-500 truncate max-w-[140px]">${escapeHtml(order.user_id || '')}</div>
+            </td>
+            <td class="py-3 px-4">
+              ${planBadge}
+              <div class="text-[11px] font-bold text-amber-400 mt-1">${amountFormatted}</div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="font-mono font-bold ${order.bank_transaction_id ? 'text-emerald-400' : 'text-slate-500 italic'}">
+                ${escapeHtml(order.bank_transaction_id || 'Pending')}
+              </div>
+            </td>
+            <td class="py-3 px-4">
+              ${receiptButton}
+            </td>
+            <td class="py-3 px-4">
+              ${statusBadge}
+            </td>
+            <td class="py-3 px-4 text-slate-400 text-[11px]">
+              ${createdDate}
+            </td>
+            <td class="py-3 px-4 text-right">
+              ${actionButtons}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderEmptyTable(message) {
+      const tbody = document.getElementById('ordersTableBody');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="py-12 text-center text-slate-500">
+            <i class="fa-solid fa-circle-exclamation text-2xl text-amber-400 mb-2"></i>
+            <p class="text-sm font-semibold text-slate-300">${message}</p>
+          </td>
+        </tr>
+      `;
+    }
+
+    async function approveOrder(orderId, userId, plan) {
+      if (!confirm(`Are you sure you want to approve this subscription and activate VIP perks?`)) return;
+
+      showToast('Processing subscription approval...', 'info');
+
+      try {
+        const normalizedPlan = (plan || '').toLowerCase() === 'prime' ? 'max' : (plan || 'pro').toLowerCase();
+        const durationDays = normalizedPlan === 'max' ? 365 : 30;
+        const nowIso = new Date().toISOString();
+        const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+        let rpcSuccess = false;
+        try {
+          const { data, error } = await supabaseClient.rpc('admin_approve_payment_order', {
+            p_order_id: orderId,
+            p_verified_by: 'Mythic Admin Web'
+          });
+          if (!error && data?.success !== false) rpcSuccess = true;
+        } catch (e) {}
+
+        if (!rpcSuccess) {
+          await supabaseClient
+            .from('payment_orders')
+            .update({
+              status: 'verified',
+              verified_at: nowIso,
+              verified_by: 'Mythic Admin Web'
+            })
+            .eq('id', orderId);
+
+          if (userId) {
+            await supabaseClient
+              .from('subscriptions')
+              .insert({
+                user_id: userId,
+                plan: normalizedPlan,
+                status: 'active',
+                payment_order_id: orderId,
+                started_at: nowIso,
+                expires_at: expiresAt
+              });
+
+            await supabaseClient
+              .from('profiles')
+              .update({ subscription_tier: normalizedPlan })
+              .eq('id', userId);
+          }
+        }
+
+        showToast('✓ Subscription verified & VIP perks activated!', 'success');
+        fetchOrders(false);
+      } catch (err) {
+        console.error("Approval error:", err);
+        showToast(`Approval failed: ${err.message}`, 'error');
+      }
+    }
+
+    function openRejectModal(orderId, ref) {
+      activeRejectOrderId = orderId;
+      document.getElementById('rejectModalRefText').innerText = `Order: ${ref}`;
+      document.getElementById('rejectReasonInput').value = 'Bank transaction ID was not found in bank ledger.';
+      document.getElementById('rejectModal').classList.remove('hidden');
+    }
+
+    function closeRejectModal() {
+      document.getElementById('rejectModal').classList.add('hidden');
+      activeRejectOrderId = null;
+    }
+
+    function setRejectReason(reason) {
+      document.getElementById('rejectReasonInput').value = reason;
+    }
+
+    async function confirmRejectOrder() {
+      if (!activeRejectOrderId) return;
+      const reason = document.getElementById('rejectReasonInput').value.trim() || 'Payment not verified by admin.';
+      const btn = document.getElementById('confirmRejectBtn');
+      btn.disabled = true;
+      btn.innerText = 'Rejecting...';
+
+      try {
+        let rpcSuccess = false;
+        try {
+          const { data, error } = await supabaseClient.rpc('admin_reject_payment_order', {
+            p_order_id: activeRejectOrderId,
+            p_rejection_reason: reason
+          });
+          if (!error && data?.success !== false) rpcSuccess = true;
+        } catch (e) {}
+
+        if (!rpcSuccess) {
+          await supabaseClient
+            .from('payment_orders')
+            .update({
+              status: 'rejected',
+              rejection_reason: reason
+            })
+            .eq('id', activeRejectOrderId);
+        }
+
+        showToast('Payment order marked as rejected', 'info');
+        closeRejectModal();
+        fetchOrders(false);
+      } catch (err) {
+        console.error("Rejection error:", err);
+        showToast(`Rejection failed: ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-xmark"></i><span>Confirm Rejection</span>';
+      }
+    }
+
+    function openGrantModal() {
+      document.getElementById('grantModal').classList.remove('hidden');
+    }
+
+    function closeGrantModal() {
+      document.getElementById('grantModal').classList.add('hidden');
+    }
+
+    async function executeDirectGrant() {
+      const identifier = document.getElementById('grantUserIdentifier').value.trim();
+      const plan = document.getElementById('grantPlan').value;
+      const days = parseInt(document.getElementById('grantDurationDays').value) || 30;
+
+      if (!identifier) {
+        showToast('Please enter user email or UUID', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('confirmGrantBtn');
+      btn.disabled = true;
+      btn.innerText = 'Granting VIP Pass...';
+
+      try {
+        let targetUserId = identifier;
+        if (identifier.includes('@')) {
+          const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('id')
+            .eq('email', identifier)
+            .maybeSingle();
+
+          if (profile?.id) targetUserId = profile.id;
+        }
+
+        const nowIso = new Date().toISOString();
+        const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+        const normalizedPlan = plan === 'prime' ? 'max' : 'pro';
+
+        await supabaseClient
+          .from('subscriptions')
+          .insert({
+            user_id: targetUserId,
+            plan: normalizedPlan,
+            status: 'active',
+            started_at: nowIso,
+            expires_at: expiresAt
+          });
+
+        await supabaseClient
+          .from('profiles')
+          .update({ subscription_tier: normalizedPlan })
+          .eq('id', targetUserId);
+
+        showToast(`✓ Granted ${plan.toUpperCase()} for ${days} days to ${identifier}!`, 'success');
+        closeGrantModal();
+        fetchOrders(false);
+      } catch (err) {
+        console.error("Grant error:", err);
+        showToast(`Failed to grant subscription: ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Grant Subscription Now';
+      }
+    }
+
+    function openReceiptModal(url, ref) {
+      const img = document.getElementById('receiptModalImg');
+      const refText = document.getElementById('receiptModalRef');
+      const downloadLink = document.getElementById('receiptModalDownload');
+
+      img.src = url;
+      refText.innerText = `Ref: ${ref}`;
+      downloadLink.href = url;
+
+      document.getElementById('receiptModal').classList.remove('hidden');
+    }
+
+    function closeReceiptModal() {
+      document.getElementById('receiptModal').classList.add('hidden');
+    }
+
+    function openConfigModal() {
+      document.getElementById('configModal').classList.remove('hidden');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('configModal').classList.add('hidden');
+    }
+
+    function saveConfigAndConnect() {
+      const url = document.getElementById('cfgUrl').value.trim();
+      const key = document.getElementById('cfgKey').value.trim();
+
+      if (!url) {
+        showToast('Supabase URL cannot be empty', 'error');
+        return;
+      }
+
+      localStorage.setItem(STORAGE_URL_KEY, url);
+      localStorage.setItem(STORAGE_KEY_KEY, key);
+
+      initSupabase();
+      closeConfigModal();
+      fetchOrders(true);
+    }
+
+    function resetDefaultConfig() {
+      document.getElementById('cfgUrl').value = DEFAULT_URL;
+      document.getElementById('cfgKey').value = '';
+    }
+
+    function exportCSV() {
+      if (allOrders.length === 0) {
+        showToast('No orders to export', 'info');
+        return;
+      }
+
+      const headers = ['Order Reference', 'User ID', 'User Email', 'Plan', 'Amount', 'Currency', 'Bank Tx ID', 'Status', 'Created At', 'Verified At', 'Verified By', 'Rejection Reason'];
+      const rows = allOrders.map(o => [
+        `"${o.payment_reference || ''}"`,
+        `"${o.user_id || ''}"`,
+        `"${o.user_email || ''}"`,
+        `"${o.plan || ''}"`,
+        o.amount || '0',
+        `"${o.currency || 'USD'}"`,
+        `"${o.bank_transaction_id || ''}"`,
+        `"${o.status || ''}"`,
+        `"${o.created_at || ''}"`,
+        `"${o.verified_at || ''}"`,
+        `"${o.verified_by || ''}"`,
+        `"${o.rejection_reason || ''}"`
+      ]);
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `mythic_payment_orders_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast('Exported CSV ledger successfully', 'success');
+    }
+
+    function copySQLScript() {
+      const text = document.getElementById('sqlScriptText').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copySqlBtnText');
+        btn.innerText = 'Copied to Clipboard!';
+        setTimeout(() => { btn.innerText = 'Copy SQL Script'; }, 2500);
+        showToast('SQL Migration Script copied!', 'success');
+      });
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-slate-800';
+      const icon = type === 'success' ? 'fa-check' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info';
+
+      toast.className = `${bg} text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 text-xs font-semibold pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300 border border-white/10`;
+      toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${escapeHtml(message)}</span>`;
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>

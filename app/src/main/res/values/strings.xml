@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">MYTHIC</string>
+    <!-- Placeholder to prevent Firebase Analytics missing google_app_id log warning -->
+    <string name="google_app_id" translatable="false">1:1076672814037:android:mythicappdefault</string>
+</resources>
